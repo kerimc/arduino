@@ -8,15 +8,16 @@
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <LiquidCrystal.h>
 #include <stdlib.h>
 
 // Data pin ori ONWIRE
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 10
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 int g_numberOfDevices;
 DeviceAddress g_tempDeviceAddress;
-
+LiquidCrystal lcd(2, 3, 4, 5 ,6 ,7 );
 
 
 int ledState = HIGH;             // ledState used to set the LED
@@ -67,6 +68,7 @@ void setup()
     strcat(c_log2, sample);
   }
   initSensors();
+  lcd.begin(16, 2); //Deklaracja typu
 }
 void loop()
 {
@@ -132,13 +134,25 @@ void loop()
   if (currentMillis - prevReadSensorsMilis >= TEMP_TIMER)
   {
     prevReadSensorsMilis = currentMillis;
-    //getTempreatures(g_temp, 3);
+    getTempreatures(g_temp, 3);
+    /*
     g_temp[0] = g_temp[0] + 0.2;
     if (g_temp[0] >= 99.0) g_temp[0] = 1.0;
     g_temp[1] = g_temp[1] + 0.9;
     if (g_temp[1] >= 99.0) g_temp[1] = 1.0;
     g_temp[2] = g_temp[2] + 2.2;
     if (g_temp[2] >= 99.0) g_temp[2] = 1.0;
+    */
+    char buf[6];
+    dtostrf(g_temp[0], 4, 1, buf);
+    lcd.setCursor(0, 0); //Ustawienie kursora
+    lcd.print(buf); //Wyświetlenie tekstu
+    lcd.setCursor(0, 1); //Ustawienie kursora
+    dtostrf(g_temp[1], 4, 1, buf);
+    lcd.print(buf); //Wyświetlenie tekstu
+    lcd.setCursor(6, 0); //Ustawienie kursora
+    dtostrf(g_temp[2], 4, 1, buf);
+    lcd.print(buf); //Wyświetlenie tekstu
   }
   digitalWrite(ledPin_12, ledState);
 
