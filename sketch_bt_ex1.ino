@@ -1,9 +1,5 @@
 /*
-    Bluetooh Basic: LED ON OFF - Avishkar
-    Coder - Mayoogh Girish
-    Website - http://bit.do/Avishkar
-    Download the App :
-    This program lets you to control a LED on pin 13 of arduino using a bluetooth module
+LCD and repmerature sensor app
 */
 
 #include <OneWire.h>
@@ -12,7 +8,7 @@
 #include <stdlib.h>
 
 // Data pin ori ONWIRE
-#define ONE_WIRE_BUS 10
+#define ONE_WIRE_BUS 11
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 int g_numberOfDevices;
@@ -27,6 +23,8 @@ unsigned long prevLogMillis = 0;        // will store last time LED was updated
 unsigned long prevReadSensorsMilis = 0;
 unsigned long prevLogMilis = 0;
 float g_temp[3];
+int pot_pin = A0;
+int pot_1;
 // xx.x;
 #define U_SIZE 5
 #define NUM_SAMPLE 60
@@ -44,14 +42,22 @@ char recivedChars[numChars];
 boolean serialNewData  = false;
 void recvWithEndMarker(void);
 
+
 int change(int  state);
 void shift_buffer( float buf[], const int b_size, const int margin);
 void getTempreatures(float measureC[], int len = 3);
 void initSensors();
 void setup()
 {
+    //enable outputs for Timer 1
+    pinMode(9,OUTPUT); //1A
+    
+   setupTimer1();
+   setPWM1A(0.5f); //set duty to 50% on pin 9
+   
   Serial.begin(9600);         //Sets the data rate in bits per second (baud) for serial data transmission
   pinMode(ledPin_12, OUTPUT);
+
   for (int i = 0; i < 3; i++)
     g_temp[i] = 0.0;
   char sample[] = {'0','0','.','0',';','\0'};
@@ -72,6 +78,8 @@ void setup()
 }
 void loop()
 {
+  pot_1 = analogRead(pot_pin);
+  float f1 = pot_1 /1023.0;
   recvWithEndMarker();
   //Serial.println(g_inputByte);
   if (((strcmp(recivedChars,"one") == 0) && serialNewData)){
@@ -135,14 +143,7 @@ void loop()
   {
     prevReadSensorsMilis = currentMillis;
     getTempreatures(g_temp, 3);
-    /*
-    g_temp[0] = g_temp[0] + 0.2;
-    if (g_temp[0] >= 99.0) g_temp[0] = 1.0;
-    g_temp[1] = g_temp[1] + 0.9;
-    if (g_temp[1] >= 99.0) g_temp[1] = 1.0;
-    g_temp[2] = g_temp[2] + 2.2;
-    if (g_temp[2] >= 99.0) g_temp[2] = 1.0;
-    */
+
     char buf[6];
     dtostrf(g_temp[0], 4, 1, buf);
     lcd.setCursor(0, 0); //Ustawienie kursora
@@ -153,10 +154,31 @@ void loop()
     lcd.setCursor(6, 0); //Ustawienie kursora
     dtostrf(g_temp[2], 4, 1, buf);
     lcd.print(buf); //Wyświetlenie tekstu
+    
+    Serial.print("f1 : ");
+    Serial.println(f1, 3);
+    
   }
   digitalWrite(ledPin_12, ledState);
+  setPWM1A(f1); //set duty to 50% on pin 9
 
 }
+
+//configure Timer 1 (pins 9,10) to output 25kHz PWM
+void setupTimer1(){
+    //Set PWM frequency to about 25khz on pins 9,10 (timer 1 mode 10, no prescale, count to 320)
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
+    TCCR1B = (1 << CS10) | (1 << WGM13);
+    ICR1 = 320;
+    OCR1A = 0;
+    OCR1B = 0;
+}
+//equivalent of analogWrite on pin 9
+void setPWM1A(float f){
+    f=f<0?0:f>1?1:f;
+    OCR1A = (uint16_t)(320*f);
+}
+
 ////////////////////////////////////////
 // util functions
 
