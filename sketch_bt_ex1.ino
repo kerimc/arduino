@@ -14,6 +14,9 @@ DallasTemperature sensors(&oneWire);
 int g_numberOfDevices;
 DeviceAddress g_tempDeviceAddress;
 LiquidCrystal lcd(2, 3, 4, 5 ,6 ,7 );
+//
+int pot_pin = A0;
+int pot_1;
 
 
 int ledState = HIGH;             // ledState used to set the LED
@@ -23,8 +26,7 @@ unsigned long prevLogMillis = 0;        // will store last time LED was updated
 unsigned long prevReadSensorsMilis = 0;
 unsigned long prevLogMilis = 0;
 float g_temp[3];
-int pot_pin = A0;
-int pot_1;
+
 // xx.x;
 #define U_SIZE 5
 #define NUM_SAMPLE 60
@@ -42,7 +44,13 @@ char recivedChars[numChars];
 boolean serialNewData  = false;
 void recvWithEndMarker(void);
 
+// ------- temperature control
+ DeviceAddress g_addrTemp[3] = { { 0x28, 0xB8, 0x1B, 0x75, 0xD0, 0x01, 0x3C, 0x5D },
+                                 { 0x28, 0x89, 0x2D, 0x75, 0xD0, 0x01, 0x3C, 0x9F },
+                                 { 0x28, 0xFF, 0x17, 0x75, 0xD0, 0x01, 0x3C, 0x8C } };
 
+                                          
+  
 int change(int  state);
 void shift_buffer( float buf[], const int b_size, const int margin);
 void getTempreatures(float measureC[], int len = 3);
@@ -261,6 +269,7 @@ void initSensors( )
   Serial.print(g_numberOfDevices, DEC);
   Serial.println(" devices.");
 
+/*
   // Loop through each device, print out address
   for (int i = 0; i < g_numberOfDevices; i++) {
     // Search the wire for address
@@ -276,12 +285,17 @@ void initSensors( )
       Serial.print(" but could not detect address. Check power and cabling");
     }
   }
+  */
+  if (!sensors.getAddress(g_addrTemp[0], 0)) Serial.println("Unable to find address for Device 0");
+  if (!sensors.getAddress(g_addrTemp[1], 1)) Serial.println("Unable to find address for Device 1");
+  if (!sensors.getAddress(g_addrTemp[2], 2)) Serial.println("Unable to find address for Device 2");
+  
 }
 void getTempreatures(float measureC[], int len  )
 {
   sensors.requestTemperatures(); // Send the command to get temperatures
   // Loop through each device, print out temperature data
-  for (int i = 0; i < g_numberOfDevices; i++) {
+  /*for (int i = 0; i < g_numberOfDevices; i++) {
     if (sensors.getAddress(g_tempDeviceAddress, i)) {
       // Output the device ID
       Serial.print("Temperature for device: ");
@@ -294,7 +308,22 @@ void getTempreatures(float measureC[], int len  )
       if ( i < len )
         measureC[i] = tempC;
     }
-  }
+  }*/
+  for (int i = 0; i < g_numberOfDevices; i++) {
+      if( i < len )
+      {
+      // Output the device ID
+        Serial.print("Temperature for device: ");
+        Serial.println(i, DEC);
+        // Print the data
+        float tempC = sensors.getTempC(g_addrTemp[i]);
+        Serial.print("Temp C: ");
+        Serial.println(tempC);
+        measureC[i] = tempC;
+      }
+    }
+    
+  
 }
 void recvWithEndMarker(){
   static byte ndx = 0;
